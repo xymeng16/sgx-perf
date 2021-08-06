@@ -423,7 +423,7 @@ extern "C" int __ocall_bridge(const void *arg, sgx_enclave_id_t eid, uint32_t oc
     int ret = bridge(arg);
 
 	auto t = event_store->get_thread();
-	if (t == nullptr) goto out;
+	if (t == nullptr) return ret;
 
 	auto ocall = new sgxperf::EnclaveOCallEvent(eid, ocall_id, arg, t->current_call);
 	event_store->insert_event(ocall);
@@ -434,10 +434,9 @@ extern "C" int __ocall_bridge(const void *arg, sgx_enclave_id_t eid, uint32_t oc
 	event_store->insert_event(new sgxperf::EnclaveOCallReturnEvent(ocall, ret));
 
 	// if the program exits abnormally (abort/segment fault/...), the current_call pointer will become null.
-	if (t->current_call == nullptr) goto out;
+	if (t->current_call == nullptr) return ret;
 	t->current_call = t->current_call->get_previous_call();
 
-	out:
 	return ret;
 }
 
