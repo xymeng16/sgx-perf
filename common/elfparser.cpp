@@ -38,7 +38,7 @@ void closeAllFiles()
 	while (it != file_map->end())
 	{
 		close(it->second);
-		file_map->erase(it);
+//		file_map->erase(it);
 		it++;
 	}
 }
