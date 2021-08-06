@@ -420,19 +420,21 @@ extern "C" int __ocall_bridge(const void *arg, sgx_enclave_id_t eid, uint32_t oc
 	auto bridge = (int (*)(const void *)) event_store->enclave_map[eid]->orig_table->table[ocall_id];
 	read_unlock(&event_store->enclave_map_lock);
 
+    int ret = bridge(arg);
+
 	auto t = event_store->get_thread();
+	if (t == nullptr) goto out;
 
 	auto ocall = new sgxperf::EnclaveOCallEvent(eid, ocall_id, arg, t->current_call);
 	event_store->insert_event(ocall);
 	t->current_call = ocall;
 
-	int ret = bridge(arg);
+
 
 	event_store->insert_event(new sgxperf::EnclaveOCallReturnEvent(ocall, ret));
 
 	// if the program exits abnormally (abort/segment fault/...), the current_call pointer will become null.
 	if (t->current_call == nullptr) goto out;
-
 	t->current_call = t->current_call->get_previous_call();
 
 	out:
