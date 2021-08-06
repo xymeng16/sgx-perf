@@ -63,7 +63,7 @@ int initialize_urts_calls()
 
 	real_sgx_thread_wait_untrusted_event_ocall = (int (*)(const void *self))dlsym(RTLD_NEXT, "sgx_thread_wait_untrusted_event_ocall");
 	real_sgx_thread_set_untrusted_event_ocall = (int (*)(const void *self))dlsym(RTLD_NEXT, "sgx_thread_set_untrusted_event_ocall");
-	
+
 	if (real_sgx_thread_wait_untrusted_event_ocall == nullptr || real_sgx_thread_set_untrusted_event_ocall == nullptr)
 	{
 		printf("!!! Could not get untrusted thread synchronization ocalls \n");
@@ -429,8 +429,13 @@ extern "C" int __ocall_bridge(const void *arg, sgx_enclave_id_t eid, uint32_t oc
 	int ret = bridge(arg);
 
 	event_store->insert_event(new sgxperf::EnclaveOCallReturnEvent(ocall, ret));
+
+	// if the program exits abnormally (abort/segment fault/...), the current_call pointer will become null.
+	if (t->current_call == nullptr) goto out;
+
 	t->current_call = t->current_call->get_previous_call();
 
+	out:
 	return ret;
 }
 
